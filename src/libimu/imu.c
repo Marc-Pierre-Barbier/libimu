@@ -16,7 +16,7 @@ imu_t imu_init()
 
     imu_set_state(&imu, IMU_STATE_UNCALIBRATED);
     imu_set_calibration_mode(&imu, IMU_CALIBMODE_NEVER);
-    
+
     imu.accelerometer_offset =
         imu.gyro_offset =
             imu.accelerometer =
@@ -66,7 +66,7 @@ void imu_calibrate(imu_t *imu)
 ////////////////////////////////////////////
 
 
-void imu_main_loop(imu_t *imu)
+void imu_main_loop_offset(imu_t *imu, float offset)
 {
     switch (imu->state)
     {
@@ -92,7 +92,7 @@ void imu_main_loop(imu_t *imu)
 
     case IMU_STATE_READY:
 
-        imu_process_raw_data(imu);
+        imu_process_raw_data_offset(imu, offset);
 
         if(imu->_calibration_mode == IMU_CALIBMODE_PERIODIC)
         {
@@ -167,26 +167,24 @@ int8_t imu_get_estimation_mode(imu_t * imu)
     return imu->_estimation_mode;
 }
 
-
 ////////////////////////////////////////////
 
-
-void imu_process_raw_data(imu_t * imu)
+void imu_process_raw_data_offset(imu_t * imu, float timeOffset)
 {
     // subtracting mean noise offsets from new raw values
     imu->gyro = imu_vec3_dif(&imu->gyro_raw, &imu->gyro_offset);
 
-    // scaling corrected raw data to 
+    // scaling corrected raw data to
     imu->accelerometer = imu_vec3_scale(&imu->accelerometer_raw, imu->_scale_factor_accelerometer);
     imu->gyro = imu_vec3_scale(&imu->gyro, imu->_scale_factor_gyro);
-    
+
     const float alpha = 0.96f, one_minus_alpha = (1.f - alpha);
 
     ////////////////////////////////////////////
     // gyro integration
     ////////////////////////////////////////////
 
-    float dtime = get_time_sec() - imu->_gyro_ts;
+    float dtime = (get_time_sec() + timeOffset) - imu->_gyro_ts;
     float rotvlen = imu_vec3_length(&imu->gyro);
     float rotang = d2r(dtime * rotvlen);
     float crotang_2 = cos(rotang * 0.5);

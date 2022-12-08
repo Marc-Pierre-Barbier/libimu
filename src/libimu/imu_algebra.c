@@ -1,5 +1,10 @@
 #include "imu_algebra.h"
 
+//malloc is not defined by default on most systems (it seems that arduinos have malloc but you shouldn't import the stdlib with an arduino )
+#if defined(WIN32) || defined(__unix__)
+#include <stdlib.h>
+#endif
+
 ////////////////////////////////////////////
 
 
